@@ -1,1 +1,244 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SandSentinel | Strategic Intelligence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/static/assets/style.css" />
+  </head>
+  <body class="text-white font-sans overflow-hidden antialiased bg-slate-950">
+    <div class="video-container">
+      <video autoplay muted loop playsinline class="video-content"><source src="/static/assets/river.mp4" type="video/mp4" /></video>
+      <div class="video-overlay"></div>
+    </div>
 
+    <!-- LANDING VIEW -->
+    <section id="view-landing" class="flex flex-col items-center justify-center h-screen text-center px-6 relative z-50">
+      <div class="p-6 bg-amber-500 rounded-[2.5rem] mb-10 shadow-[0_0_80px_#f59e0b] animate-pulse">
+        <i data-lucide="shield-alert" class="w-16 h-16 text-white"></i>
+      </div>
+      <h1 class="text-9xl font-black tracking-tighter mb-4 italic leading-none text-white uppercase">SAND<span class="text-amber-500">SENTINEL</span></h1>
+      <p class="text-2xl text-amber-500 font-bold tracking-[0.5em] mb-16 uppercase">Strategic Extraction Intelligence</p>
+      <div class="flex gap-8">
+        <button onclick="switchView('dashboard')" class="btn-titan-primary">Launch Dashboard</button>
+        <button onclick="switchView('dossier')" class="btn-titan-secondary">Generate Forensic Dossier</button>
+      </div>
+    </section>
+
+    <div id="app-shell" class="hidden flex h-screen overflow-hidden relative z-[100]">
+      <aside class="w-80 sidebar-glass border-r border-amber-500/20 flex flex-col">
+        <div class="p-12 text-center" onclick="switchView('landing')">
+          <h1 class="text-2xl font-black tracking-tighter uppercase text-white cursor-pointer italic">SENTINEL <span class="text-amber-500">PRO</span></h1>
+        </div>
+        <nav class="flex-1 px-8 space-y-1 overflow-y-auto custom-scrollbar pb-10">
+          <button onclick="switchView('dashboard')" class="nav-btn-v2" id="nav-dashboard"><i data-lucide="activity"></i> <span>Telemetry</span></button>
+          <button onclick="switchView('bridge')" class="nav-btn-v2" id="nav-bridge"><i data-lucide="tower-control"></i> <span>Bridge Guard</span></button>
+          <button onclick="switchView('hardware')" class="nav-btn-v2" id="nav-hardware"><i data-lucide="cpu"></i> <span>Hardware Core</span></button>
+          <button onclick="switchView('dna')" class="nav-btn-v2" id="nav-dna"><i data-lucide="fingerprint"></i> <span>Vessel DNA</span></button>
+          <button onclick="switchView('sim')" class="nav-btn-v2" id="nav-sim"><i data-lucide="play-circle"></i> <span>Simulation</span></button>
+          <button onclick="switchView('sonar')" class="nav-btn-v2" id="nav-sonar"><i data-lucide="mic-2"></i> <span>Sonar Lab</span></button>
+          <button onclick="switchView('fleet')" class="nav-btn-v2" id="nav-fleet"><i data-lucide="globe"></i> <span>Fleet Map</span></button>
+          <button onclick="switchView('forensics')" class="nav-btn-v2" id="nav-forensics"><i data-lucide="file-text"></i> <span>Forensics</span></button>
+          <button onclick="switchView('dossier')" class="nav-btn-v2" id="nav-dossier"><i data-lucide="clipboard-list"></i> <span>Dossier</span></button>
+        </nav>
+      </aside>
+
+      <main class="flex-1 overflow-y-auto p-12 custom-scrollbar">
+        <!-- DASHBOARD -->
+        <section id="view-dashboard" class="content-view hidden">
+          <header class="flex justify-between items-end mb-12">
+            <h2 class="text-6xl font-black tracking-tighter italic uppercase underline decoration-amber-500 decoration-4">Live <span class="text-amber-500">Monitor</span></h2>
+            <p class="text-amber-500 font-mono text-4xl font-black" id="real-time-clock">00:00:00</p>
+          </header>
+          <div class="grid grid-cols-4 gap-6 mb-12">
+            <div class="stat-card-v2">
+              <span class="text-[12px] font-black text-amber-500 mb-6 block uppercase">Turbidity</span>
+              <h3 class="text-6xl font-bold tracking-tighter text-white" id="val-turbidity">--</h3>
+            </div>
+            <div class="stat-card-v2">
+              <span class="text-[12px] font-black text-amber-500 mb-6 block uppercase">Vibration</span>
+              <h3 class="text-6xl font-bold tracking-tighter text-white" id="val-vibration">--</h3>
+            </div>
+            <div class="stat-card-v2">
+              <span class="text-[12px] font-black text-amber-500 mb-6 block uppercase">Sand Delta</span>
+              <h3 class="text-6xl font-bold tracking-tighter text-white" id="val-depth">--</h3>
+            </div>
+            <div id="alert-card" class="stat-card-v2 border-emerald-500">
+              <span class="text-[12px] font-black text-emerald-400 mb-6 block uppercase">Status</span>
+              <h3 class="text-3xl font-black text-emerald-400 uppercase tracking-tighter" id="val-status">Secure</h3>
+            </div>
+          </div>
+          <div class="flex flex-col lg:flex-row gap-8 h-[400px]">
+            <div class="flex-[2] glass-panel-v2 p-8"><canvas id="sensorChart"></canvas></div>
+            <div class="flex-[1] glass-panel-v2 p-8"><canvas id="depthChart"></canvas></div>
+          </div>
+        </section>
+
+        <!-- BRIDGE GUARD -->
+        <section id="view-bridge" class="content-view hidden">
+          <h2 class="text-6xl font-black tracking-tighter italic uppercase underline decoration-amber-500 decoration-4 mb-12">Bridge <span class="text-amber-500">Integrity</span></h2>
+          <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div class="glass-panel-v2 p-8 flex flex-col items-center justify-center">
+              <div class="scour-gauge-container">
+                <div class="scour-gauge-bar" id="scour-fill"></div>
+                <div class="scour-markers"><span>SAFE</span><span>WARN</span><span>CRIT</span></div>
+              </div>
+              <p class="mt-6 text-[10px] font-bold uppercase tracking-widest text-white/40" id="bridge-health">Factor: 1.0 Safe</p>
+            </div>
+            <div class="lg:col-span-3 glass-panel-v2 p-8 h-[400px]"><canvas id="bridgeChart"></canvas></div>
+          </div>
+        </section>
+
+        <!-- HARDWARE CORE -->
+        <section id="view-hardware" class="content-view hidden">
+          <h2 class="text-6xl font-black tracking-tighter italic uppercase underline decoration-amber-500 decoration-4 mb-12">Hardware <span class="text-amber-500">Core</span></h2>
+          <div class="grid grid-cols-3 gap-8">
+            <div class="glass-panel-v2 p-10 text-center">
+              <h4 class="text-amber-500 font-black mb-10 uppercase">Buoy Orientation</h4>
+              <div class="buoy-3d-container">
+                <div class="buoy-model" id="buoy-3d-model">
+                  <div class="buoy-top"></div>
+                  <div class="buoy-bottom"></div>
+                </div>
+              </div>
+              <p class="mt-8 font-mono text-cyan-400" id="val-tilt-deg">TILT: 0.0°</p>
+            </div>
+            <div class="glass-panel-v2 p-10 lg:col-span-2">
+              <h4 class="text-amber-500 font-black mb-8 uppercase italic">Anti-Tamper & Signal Diagnostics</h4>
+              <div class="space-y-6 font-mono text-sm" id="hardware-logs">
+                <div class="flex justify-between border-b border-white/5 pb-2"><span>GPS Coordinates</span><span class="text-emerald-400 font-bold" id="gps-coords"> Waiting for GPS... </span></div>
+                <div class="flex justify-between border-b border-white/5 pb-2"><span>Solar Potential</span><span class="text-emerald-400 font-bold">12.8V - OPTIMAL</span></div>
+                <div class="flex justify-between border-b border-white/5 pb-2"><span>GSM Signal (RSSI)</span><span class="text-emerald-400 font-bold">-65 dBm [4G]</span></div>
+                <div class="flex justify-between border-b border-white/5 pb-2"><span>CPU Temp</span><span class="text-emerald-400 font-bold">42.4 °C</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- VESSEL DNA -->
+        <section id="view-dna" class="content-view hidden">
+          <h2 class="text-6xl font-black tracking-tighter italic uppercase underline decoration-amber-500 decoration-4 mb-12">Vessel <span class="text-amber-500">DNA Matrix</span></h2>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="glass-panel-v2 p-12 text-center">
+              <div class="dna-ring-container mx-auto">
+                <div class="dna-ring"></div>
+                <p class="dna-percent" id="dna-match">0%</p>
+              </div>
+              <p id="dna-name" class="mt-8 text-3xl font-black text-amber-500 tracking-widest uppercase">Scanning...</p>
+            </div>
+            <div class="glass-panel-v2 p-10 h-[450px]"><canvas id="dnaChart"></canvas></div>
+          </div>
+        </section>
+
+        <!-- DOSSIER -->
+        <section id="view-dossier" class="content-view hidden">
+          <h2 class="text-6xl font-black tracking-tighter italic uppercase underline decoration-amber-500 decoration-4 mb-12">Forensic <span class="text-amber-500">Dossier</span></h2>
+          <div class="glass-panel-v2 p-20 text-center relative overflow-hidden h-[500px] flex flex-col justify-center items-center" id="report-stage">
+            <div id="scan-line-effect" class="hidden"></div>
+            <div id="report-initial">
+              <i data-lucide="file-text" class="w-20 h-20 mx-auto mb-8 text-amber-500"></i>
+              <h4 class="text-3xl font-black mb-4">READY TO COMPILE EVIDENCE</h4>
+              <p class="text-white/40 mb-10 italic uppercase tracking-widest text-xs">Node Instance: AG-VAR-01 | Varanasi Grid</p>
+              <button onclick="generateDossier()" class="btn-titan-primary">Initiate Extraction Report</button>
+            </div>
+            <div id="report-loading" class="hidden font-mono text-emerald-400 text-left space-y-4">
+              <p class="animate-pulse">Initializing forensic scan...</p>
+              <p class="animate-pulse delay-75">Fetching sensor buffer...</p>
+              <p class="animate-pulse delay-150">Calculating economic impact...</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- SIMULATION -->
+        <section id="view-sim" class="content-view hidden">
+          <header class="flex justify-between items-center mb-10">
+            <h2 class="text-6xl font-black tracking-tighter italic text-white uppercase underline decoration-amber-500 decoration-4">River <span class="text-amber-500">X-Ray Sim</span></h2>
+            <div class="px-8 py-4 bg-emerald-500/10 border-2 border-emerald-500 rounded-full"><span class="text-sm font-black text-emerald-400 uppercase tracking-widest" id="sim-status-label">Normal Hydraulics</span></div>
+          </header>
+          <div class="glass-panel-v2 h-[400px] mb-8 relative overflow-hidden bg-[#001c2b]">
+            <div id="sim-water-body" class="absolute inset-0 z-10 opacity-60 bg-gradient-to-b from-cyan-900/40 to-cyan-600/40 transition-colors duration-[2000ms]"><div class="river-current-lines"></div></div>
+            <div id="sim-sand-bed" class="absolute bottom-0 w-full h-[150px] bg-[#c2a47a] z-20 border-t-8 border-[#a68a64] transition-all duration-[3000ms]"><div class="sand-texture"></div></div>
+            <div id="sim-dredge-pipe" class="absolute top-[-300px] left-1/2 -translate-x-1/2 w-8 h-[400px] bg-slate-700 border-x-4 border-slate-500 z-30 transition-all duration-1000"><div class="w-16 h-16 bg-slate-800 absolute bottom-0 -left-4 rounded-b-lg border-4 border-slate-600 shadow-2xl"></div></div>
+            <div id="sim-plume" class="absolute bottom-20 left-1/2 -translate-x-1/2 w-0 h-0 bg-[#4d3319] blur-[60px] opacity-0 transition-all duration-1000"></div>
+          </div>
+          <div class="grid grid-cols-3 gap-8">
+            <div class="glass-panel-v2 p-6 h-[300px]"><canvas id="simChartTurb"></canvas></div>
+            <div class="glass-panel-v2 p-6 h-[300px]"><canvas id="simChartVib"></canvas></div>
+            <div class="glass-panel-v2 p-6 h-[300px]"><canvas id="simChartDelta"></canvas></div>
+          </div>
+        </section>
+
+        <!-- SONAR LAB -->
+        <section id="view-sonar" class="content-view hidden">
+          <h2 class="text-6xl font-black italic mb-16 text-white uppercase underline decoration-amber-500">Sonar Lab</h2>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 glass-panel-v2 h-[500px] relative"><canvas id="waterfallCanvas" class="w-full h-full rounded-3xl"></canvas></div>
+            <div class="glass-panel-v2 p-10 text-center">
+              <p class="text-amber-500 font-black uppercase mb-4 tracking-widest text-xs">Acoustic Signature</p>
+              <p id="val-vessel" class="text-3xl font-black uppercase">Ambient</p>
+              <p id="val-rpm" class="text-5xl font-black mt-4">0 RPM</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- FLEET MAP -->
+        <section id="view-fleet" class="content-view hidden h-full">
+          <h2 class="text-6xl font-black tracking-tighter mb-12 text-white uppercase underline decoration-amber-500">Fleet <span class="text-amber-500">Tactical Map</span></h2>
+          <div class="glass-panel-v2 h-[600px] relative overflow-hidden bg-[#05080f] border-2 border-amber-500/20" id="fleet-map-container">
+            <div class="absolute inset-0 fleet-grid"></div>
+            <div class="river-path"></div>
+            <div class="map-buoy buoy-01" style="top: 25%; left: 15%">
+              <span>AG-VAR-01</span>
+              <div class="pulse-ring"></div>
+            </div>
+            <div class="map-buoy buoy-02" style="top: 45%; left: 40%">
+              <span>AG-VAR-02</span>
+              <div class="pulse-ring"></div>
+            </div>
+            <div class="map-buoy buoy-03" style="top: 70%; left: 25%">
+              <span>AG-VAR-03</span>
+              <div class="pulse-ring"></div>
+            </div>
+            <div class="map-buoy buoy-04" style="top: 30%; left: 75%">
+              <span>AG-VAR-04</span>
+              <div class="pulse-ring"></div>
+            </div>
+            <div class="map-buoy buoy-05" style="top: 55%; left: 85%">
+              <span>AG-VAR-05</span>
+              <div class="pulse-ring"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- FORENSIC VAULT -->
+        <section id="view-forensics" class="content-view hidden">
+          <h2 class="text-6xl font-black italic mb-16 text-white uppercase underline decoration-amber-500">Forensic Vault</h2>
+          <div class="glass-panel-v2 overflow-hidden">
+            <table class="w-full text-left">
+              <thead class="bg-amber-500/10 text-amber-500 uppercase font-black">
+                <tr>
+                  <th class="p-8">Timestamp</th>
+                  <th class="p-8">Vessel Profile</th>
+                  <th class="p-8">Sand Delta</th>
+                  <th class="p-8">Econ. Loss (₹)</th>
+                  <th class="p-8">Proof Hash</th>
+                </tr>
+              </thead>
+              <tbody id="forensic-table" class="text-white font-bold"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/static/js/mockData.js"></script>
+    <script src="/static/js/dashboard.js"></script>
+    <script src="/static/js/app.js"></script>
+    <script>
+      lucide.createIcons();
+    </script>
+  </body>
+</html>
