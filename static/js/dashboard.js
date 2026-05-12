@@ -83,7 +83,7 @@ function updateDashboard() {
       bridgeChart.update("none");
     });
 }
-setInterval(updateDashboard, 500);
+setInterval(updateDashboard, 300);
 setInterval(() => {
   document.getElementById("real-time-clock").innerText = new Date().toLocaleTimeString();
 }, 1000);
