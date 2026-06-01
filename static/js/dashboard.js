@@ -30,15 +30,15 @@ function updateDashboard() {
   fetch("/latest")
     .then((res) => res.json())
     .then((data) => {
-      const turb = parseFloat(data.Turbidity) || 35 + Math.random() * 5;
-      const vib = parseFloat(data.Vibration) || 0.2 + Math.random() * 0.4;
+      const turb = parseFloat(data.Turbidity); // || 35 + Math.random() * 5
+      const vib = parseFloat(data.Vibration); //  || 0.2 + Math.random() * 0.4
       const dep = parseFloat(data.Depth) || 0;
       const lat = parseFloat(data.Latitude);
       const lng = parseFloat(data.Longitude);
 
       document.getElementById("val-turbidity").innerText = turb.toFixed(1);
       document.getElementById("val-vibration").innerText = vib.toFixed(2);
-      document.getElementById("val-depth").innerText = dep.toFixed(1);
+      document.getElementById("val-depth").innerText = dep.toFixed(2);
       document.getElementById("gps-coords").innerText = `[${lat.toFixed(4)}, ${lng.toFixed(4)}]`;
 
       const isMining = (turb > 400 && vib > 25) || dep > 5;
@@ -81,9 +81,43 @@ function updateDashboard() {
       bridgeChart.data.datasets[0].data.shift();
       bridgeChart.data.datasets[0].data.push(factor);
       bridgeChart.update("none");
+
+      const tilt = parseFloat(data.Tilt) || 0;
+      const waveEnergy = parseFloat(data.WaveEnergy) || 0;
+
+      // Update the 3D buoy model rotation
+      const buoyModel = document.getElementById('buoy-3d-model');
+      const tiltLabel = document.getElementById('val-tilt-deg');
+
+      if (buoyModel) {
+        // Cap visual tilt at 45° for display — beyond that it looks broken
+        const displayTilt = Math.min(tilt, 45);
+        
+        // Use roll for left-right tilt, pitch for forward-back
+        // Since we only have one tiltAngle value, rotate on Z axis
+        buoyModel.style.transform = `rotate(${displayTilt}deg)`;
+        buoyModel.style.transition = 'transform 0.5s ease-out';
+        
+        // Add wave bobbing animation when rocking
+        if (data.IsRocking) {
+          buoyModel.style.animation = 'buoyWave 1s ease-in-out infinite alternate';
+        } else {
+          buoyModel.style.animation = 'buoyFloat 3s infinite ease-in-out';
+        }
+      }
+
+      if (tiltLabel) {
+        const status = tilt > 30 ? '⚠ TAMPER' : tilt > 15 ? 'ROCKING' : 'STABLE';
+        tiltLabel.innerText = `TILT: ${tilt.toFixed(1)}° — ${status}`;
+        tiltLabel.className = tilt > 30 
+          ? 'mt-8 font-mono text-red-400 font-bold' 
+          : tilt > 15 
+          ? 'mt-8 font-mono text-amber-400' 
+          : 'mt-8 font-mono text-cyan-400';
+      }
     });
 }
-setInterval(updateDashboard, 2000);
+setInterval(updateDashboard, 2000); //2000 initially
 setInterval(() => {
   document.getElementById("real-time-clock").innerText = new Date().toLocaleTimeString();
 }, 1000);
