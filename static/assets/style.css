@@ -371,3 +371,17 @@
     background: #f59e0b;
     border-radius: 10px;
 }
+
+@keyframes buoyWave {
+    0% {
+        transform: rotate(-8deg) translateY(-5px);
+    }
+
+    100% {
+        transform: rotate(8deg) translateY(5px);
+    }
+}
+
+.buoy-model {
+    transition: transform 0.5s ease-out;
+}
