@@ -11,8 +11,8 @@ latest_data = {
     "Turbidity": 0,
     "Vibration": 0,
     "Depth": 0,
-    "Tilt": 0,
-    "DetectVibration": False,
+    "Pitch": 0,
+    "Roll": 0,
     "Latitude": 0,
     "Longitude": 0
 }
