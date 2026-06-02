@@ -134,7 +134,7 @@ function updateDashboard() {
       }
     });
 }
-setInterval(updateDashboard, 1000); //2000 initially
+setInterval(updateDashboard, 2000); //2000 initially
 setInterval(() => {
   document.getElementById("real-time-clock").innerText = new Date().toLocaleTimeString();
 }, 1000);
