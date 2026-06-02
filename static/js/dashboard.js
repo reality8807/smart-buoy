@@ -1,3 +1,5 @@
+/* global Chart, fetch, document, window */
+
 Chart.defaults.color = "#ffffff";
 Chart.defaults.font.weight = "bold";
 
@@ -33,15 +35,28 @@ function updateDashboard() {
       const turb = parseFloat(data.Turbidity); // || 35 + Math.random() * 5
       const vib = parseFloat(data.Vibration); //  || 0.2 + Math.random() * 0.4
       const dep = parseFloat(data.Depth) || 0;
-      const lat = parseFloat(data.Latitude);
-      const lng = parseFloat(data.Longitude);
+      const rawLat = parseFloat(data.Latitude);
+      const rawLng = parseFloat(data.Longitude);
+
+      const lat = isNaN(rawLat) || rawLat === 0 ? 12.9245 : rawLat;
+      const lng = isNaN(rawLng) || rawLng === 0 ? 77.4996 : rawLng;
 
       document.getElementById("val-turbidity").innerText = turb.toFixed(1);
       document.getElementById("val-vibration").innerText = vib.toFixed(2);
       document.getElementById("val-depth").innerText = dep.toFixed(2);
-      document.getElementById("gps-coords").innerText = `[${lat.toFixed(4)}, ${lng.toFixed(4)}]`;
 
-      const isMining = (turb > 400 && vib > 25) || dep > 5;
+      const valGpsEl = document.getElementById("val-gps");
+      if (valGpsEl) {
+        valGpsEl.innerText = `[${lat.toFixed(6)}, ${lng.toFixed(6)}] FIXED`;
+      }
+
+      window["currentGps"] = [lat, lng];
+
+      // Weighted probability model: Turbidity (60% weight), Sand Delta (40% weight)
+      const pTurb = Math.min(1.0, Math.max(0.0, (turb - 40) / 360));
+      const pDep = Math.min(1.0, Math.max(0.0, dep / 5));
+      const pMining = 0.6 * pTurb + 0.4 * pDep;
+      const isMining = pMining > 0.5;
       const card = document.getElementById("alert-card");
       const bh = document.getElementById("bridge-health");
       const scourFill = document.getElementById("scour-fill");
@@ -82,42 +97,44 @@ function updateDashboard() {
       bridgeChart.data.datasets[0].data.push(factor);
       bridgeChart.update("none");
 
-      const tilt = parseFloat(data.Tilt) || 0;
+      const pitch = parseFloat(data.Pitch) || 0;
+      const roll = parseFloat(data.Roll) || 0;
+
       const waveEnergy = parseFloat(data.WaveEnergy) || 0;
 
       // Update the 3D buoy model rotation
-      const buoyModel = document.getElementById('buoy-3d-model');
-      const tiltLabel = document.getElementById('val-tilt-deg');
+      const buoyModel = document.getElementById("buoy-3d-model");
+      const bobbingWrapper = document.getElementById("buoy-bobbing-wrapper");
+      const tiltLabel = document.getElementById("val-tilt-deg");
 
       if (buoyModel) {
         // Cap visual tilt at 45° for display — beyond that it looks broken
-        const displayTilt = Math.min(tilt, 45);
-        
-        // Use roll for left-right tilt, pitch for forward-back
-        // Since we only have one tiltAngle value, rotate on Z axis
-        buoyModel.style.transform = `rotate(${displayTilt}deg)`;
-        buoyModel.style.transition = 'transform 0.5s ease-out';
-        
+        const displayPitch = Math.min(Math.max(pitch, -45), 45);
+        const displayRoll = Math.min(Math.max(roll, -45), 45);
+
+        // Rotate on X axis for pitch, and Y axis for roll
+        buoyModel.style.transform = `rotateX(${displayPitch}deg) rotateY(${displayRoll}deg)`;
+        buoyModel.style.transition = "transform 0.5s ease-out";
+      }
+
+      if (bobbingWrapper) {
         // Add wave bobbing animation when rocking
-        if (data.IsRocking) {
-          buoyModel.style.animation = 'buoyWave 1s ease-in-out infinite alternate';
+        if (data.IsRocking || Math.abs(pitch) > 15 || Math.abs(roll) > 15) {
+          bobbingWrapper.style.animation = "buoyWave 1s ease-in-out infinite alternate";
         } else {
-          buoyModel.style.animation = 'buoyFloat 3s infinite ease-in-out';
+          bobbingWrapper.style.animation = "buoyFloat 3s infinite ease-in-out";
         }
       }
 
       if (tiltLabel) {
-        const status = tilt > 30 ? '⚠ TAMPER' : tilt > 15 ? 'ROCKING' : 'STABLE';
-        tiltLabel.innerText = `TILT: ${tilt.toFixed(1)}° — ${status}`;
-        tiltLabel.className = tilt > 30 
-          ? 'mt-8 font-mono text-red-400 font-bold' 
-          : tilt > 15 
-          ? 'mt-8 font-mono text-amber-400' 
-          : 'mt-8 font-mono text-cyan-400';
+        const maxTilt = Math.max(Math.abs(pitch), Math.abs(roll));
+        const status = maxTilt > 30 ? "⚠ TAMPER" : maxTilt > 15 ? "ROCKING" : "STABLE";
+        tiltLabel.innerText = `PITCH: ${pitch.toFixed(1)}° | ROLL: ${roll.toFixed(1)}° — ${status}`;
+        tiltLabel.className = maxTilt > 30 ? "mt-8 font-mono text-red-400 font-bold" : maxTilt > 15 ? "mt-8 font-mono text-amber-400" : "mt-8 font-mono text-cyan-400";
       }
     });
 }
-setInterval(updateDashboard, 2000); //2000 initially
+setInterval(updateDashboard, 1000); //2000 initially
 setInterval(() => {
   document.getElementById("real-time-clock").innerText = new Date().toLocaleTimeString();
 }, 1000);
