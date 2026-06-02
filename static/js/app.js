@@ -1,3 +1,8 @@
+/* global dnaChart, Chart, populateForensics, lucide, generateSensorData, document, window, L */
+
+let mapInstance = null;
+let activeMarker = null;
+
 function switchView(viewId) {
     document.getElementById('view-landing').classList.add('hidden');
     document.getElementById('app-shell').classList.add('hidden');
@@ -12,6 +17,18 @@ function switchView(viewId) {
         document.getElementById(`nav-${viewId}`).classList.add('active');
         if (viewId === 'forensics') populateForensics();
         if (viewId === 'dna' && dnaChart) dnaChart.update();
+        if (viewId === 'fleet') {
+            setTimeout(() => {
+                initMap();
+                if (mapInstance) mapInstance.invalidateSize();
+            }, 150);
+            setTimeout(() => {
+                if (mapInstance) mapInstance.invalidateSize();
+            }, 400);
+            setTimeout(() => {
+                if (mapInstance) mapInstance.invalidateSize();
+            }, 800);
+        }
     }
     lucide.createIcons();
 }
@@ -111,6 +128,38 @@ function generateDossier() {
                 <button onclick="window.print()" class="mt-12 btn-titan-primary py-4 w-full">Download Forensic PDF</button>
             </div>`;
     }, 3500);
+}
+
+function initMap() {
+    const coords = window['currentGps'] || [12.9239, 77.4997];
+    if (!mapInstance) {
+        mapInstance = L.map('fleet-leaflet-map').setView(coords, 13);
+        
+        L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(mapInstance);
+        
+        const activeIcon = L.divIcon({
+            className: 'custom-active-icon',
+            html: '<div class="yellow-flashing-marker"><div class="yellow-pulse-ring"></div></div>',
+            iconSize: [12, 12],
+            iconAnchor: [6, 6]
+        });
+        
+        activeMarker = L.marker(coords, { icon: activeIcon }).addTo(mapInstance);
+        activeMarker.bindPopup('AG-RVCE-01 (ACTIVE)').openPopup();
+        
+        const tacticalMarkers = [
+            { name: 'AG-RVCE-02', coords: [12.9340, 77.5050] },
+            { name: 'AG-RVCE-03', coords: [12.9150, 77.4850] },
+            { name: 'AG-RVCE-04', coords: [12.9400, 77.4750] }
+        ];
+        
+        tacticalMarkers.forEach(m => {
+            L.marker(m.coords).addTo(mapInstance).bindPopup(m.name);
+        });
+    } else {
+        activeMarker.setLatLng(coords);
+        mapInstance.setView(coords);
+    }
 }
 
 window.onload = () => { initSim(); initSonar(); initDNA(); populateForensics(); };
