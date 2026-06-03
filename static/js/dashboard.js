@@ -95,23 +95,27 @@ function updateDashboard() {
       // Handle card styling classes and text updates
       if (card) {
         card.classList.remove("border-emerald-500", "border-amber-500", "border-red-500", "mining-alert");
-        const cardTitle = card.querySelector("span");
-        const cardVal = document.getElementById("val-status");
+        const lblStatus = document.getElementById("lbl-status");
+        const valStatus = document.getElementById("val-status");
+        const lblProbability = document.getElementById("lbl-probability");
+        const valProbability = document.getElementById("val-probability");
 
-        if (cardTitle) {
-          cardTitle.classList.remove("text-emerald-400", "text-amber-500", "text-red-500");
-        }
-        if (cardVal) {
-          cardVal.classList.remove("text-emerald-400", "text-amber-500", "text-red-500");
+        const elementsToColor = [lblStatus, valStatus, lblProbability, valProbability];
+        elementsToColor.forEach(el => {
+          if (el) el.classList.remove("text-emerald-400", "text-amber-500", "text-red-500");
+        });
+
+        if (valProbability) {
+          valProbability.innerText = `${probPct}%`;
         }
 
         if (pMining <= 0.20) {
           card.classList.add("border-emerald-500");
-          if (cardTitle) cardTitle.classList.add("text-emerald-400");
-          if (cardVal) {
-            cardVal.classList.add("text-emerald-400");
-            cardVal.innerText = `SECURE (${probPct}%)`;
-          }
+          elementsToColor.forEach(el => {
+            if (el) el.classList.add("text-emerald-400");
+          });
+          if (valStatus) valStatus.innerText = "SECURE";
+          
           document.getElementById("val-vessel").innerText = "Ambient";
           document.getElementById("val-rpm").innerText = "0 RPM";
           if (bh) {
@@ -120,11 +124,11 @@ function updateDashboard() {
           }
         } else if (pMining <= 0.50) {
           card.classList.add("border-amber-500");
-          if (cardTitle) cardTitle.classList.add("text-amber-500");
-          if (cardVal) {
-            cardVal.classList.add("text-amber-500");
-            cardVal.innerText = `SUSPICIOUS (${probPct}%)`;
-          }
+          elementsToColor.forEach(el => {
+            if (el) el.classList.add("text-amber-500");
+          });
+          if (valStatus) valStatus.innerText = "SUSPICIOUS";
+          
           document.getElementById("val-vessel").innerText = "Unusual Activity";
           document.getElementById("val-rpm").innerText = "800 RPM";
           if (bh) {
@@ -133,11 +137,11 @@ function updateDashboard() {
           }
         } else {
           card.classList.add("border-red-500", "mining-alert");
-          if (cardTitle) cardTitle.classList.add("text-red-500");
-          if (cardVal) {
-            cardVal.classList.add("text-red-500");
-            cardVal.innerText = `ALERT: MINING (${probPct}%)`;
-          }
+          elementsToColor.forEach(el => {
+            if (el) el.classList.add("text-red-500");
+          });
+          if (valStatus) valStatus.innerText = "DETECTED";
+          
           document.getElementById("val-vessel").innerText = "Dredge Detected";
           document.getElementById("val-rpm").innerText = "1840 RPM";
           if (bh) {
