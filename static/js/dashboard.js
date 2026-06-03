@@ -41,46 +41,110 @@ function updateDashboard() {
       const lat = isNaN(rawLat) || rawLat === 0 ? 12.9245 : rawLat;
       const lng = isNaN(rawLng) || rawLng === 0 ? 77.4996 : rawLng;
 
+      const pitch = parseFloat(data.Pitch) || 0;
+      const roll = parseFloat(data.Roll) || 0;
+
       document.getElementById("val-turbidity").innerText = turb.toFixed(1);
       document.getElementById("val-vibration").innerText = vib.toFixed(2);
       document.getElementById("val-depth").innerText = dep.toFixed(2);
-
+      
       const valGpsEl = document.getElementById("val-gps");
       if (valGpsEl) {
         valGpsEl.innerText = `[${lat.toFixed(6)}, ${lng.toFixed(6)}] FIXED`;
       }
+      
+      window['currentGps'] = [lat, lng];
 
-      window["currentGps"] = [lat, lng];
+      // Dynamic baseline depth calibration
+      if (typeof window['baselineDepth'] === 'undefined') {
+        window['baselineDepth'] = null;
+      }
+      if (window['baselineDepth'] === null && dep >= 20 && dep <= 300) {
+        window['baselineDepth'] = dep;
+      }
 
-      // Weighted probability model: Turbidity (60% weight), Sand Delta (40% weight)
-      const pTurb = Math.min(1.0, Math.max(0.0, (turb - 40) / 360));
-      const pDep = Math.min(1.0, Math.max(0.0, dep / 5));
-      const pMining = 0.6 * pTurb + 0.4 * pDep;
-      const isMining = pMining > 0.5;
+      // Sub-Probability Calculations:
+      // A. Turbidity (Clean water: 500-600 NTU, Muddy water: >= 600 NTU)
+      const pTurb = Math.min(1.0, Math.max(0.0, (turb - 600) / 200));
+
+      // B. Depth delta (Excavation)
+      let pDep = 0.0;
+      if (window['baselineDepth'] !== null) {
+        const depthDelta = dep - window['baselineDepth'];
+        pDep = Math.min(1.0, Math.max(0.0, (depthDelta - 2) / 8));
+      }
+
+      // C. Vibration (Peak-to-Peak quiet ~100-300, pumps/engines >= 1000)
+      const pVib = Math.min(1.0, Math.max(0.0, (vib - 400) / 1600));
+
+      // D. Tilt (Pitch & Roll baseline quiet < 5 deg, heavy rocking >= 25 deg)
+      const maxTilt = Math.max(Math.abs(pitch), Math.abs(roll));
+      const pTilt = Math.min(1.0, Math.max(0.0, (maxTilt - 5) / 20));
+
+      // Combined Weighted Mining Probability
+      const pMining = (0.40 * pTurb) + (0.35 * pDep) + (0.15 * pVib) + (0.10 * pTilt);
+      const isMining = pMining > 0.50;
+      const probPct = Math.round(pMining * 100);
+
       const card = document.getElementById("alert-card");
       const bh = document.getElementById("bridge-health");
       const scourFill = document.getElementById("scour-fill");
 
       const factor = isMining ? Math.max(0.4, 1.0 - dep / 50) : 1.0;
 
-      if (isMining) {
-        card.classList.add("mining-alert");
-        document.getElementById("val-status").innerText = "ALERT: MINING";
-        if (bh) {
-          bh.innerText = `Factor: ${factor.toFixed(2)} Danger`;
-          bh.className = "text-[10px] font-bold text-red-500 uppercase";
+      // Handle card styling classes and text updates
+      if (card) {
+        card.classList.remove("border-emerald-500", "border-amber-500", "border-red-500", "mining-alert");
+        const cardTitle = card.querySelector("span");
+        const cardVal = document.getElementById("val-status");
+
+        if (cardTitle) {
+          cardTitle.classList.remove("text-emerald-400", "text-amber-500", "text-red-500");
         }
-        document.getElementById("val-vessel").innerText = "Dredge Detected";
-        document.getElementById("val-rpm").innerText = "1840 RPM";
-      } else {
-        card.classList.remove("mining-alert");
-        document.getElementById("val-status").innerText = "SECURE";
-        if (bh) {
-          bh.innerText = "Factor: 1.0 Safe";
-          bh.className = "text-[10px] font-bold text-emerald-400 uppercase";
+        if (cardVal) {
+          cardVal.classList.remove("text-emerald-400", "text-amber-500", "text-red-500");
         }
-        document.getElementById("val-vessel").innerText = "Ambient";
-        document.getElementById("val-rpm").innerText = "0 RPM";
+
+        if (pMining <= 0.20) {
+          card.classList.add("border-emerald-500");
+          if (cardTitle) cardTitle.classList.add("text-emerald-400");
+          if (cardVal) {
+            cardVal.classList.add("text-emerald-400");
+            cardVal.innerText = `SECURE (${probPct}%)`;
+          }
+          document.getElementById("val-vessel").innerText = "Ambient";
+          document.getElementById("val-rpm").innerText = "0 RPM";
+          if (bh) {
+            bh.innerText = "Factor: 1.0 Safe";
+            bh.className = "text-[10px] font-bold text-emerald-400 uppercase";
+          }
+        } else if (pMining <= 0.50) {
+          card.classList.add("border-amber-500");
+          if (cardTitle) cardTitle.classList.add("text-amber-500");
+          if (cardVal) {
+            cardVal.classList.add("text-amber-500");
+            cardVal.innerText = `SUSPICIOUS (${probPct}%)`;
+          }
+          document.getElementById("val-vessel").innerText = "Unusual Activity";
+          document.getElementById("val-rpm").innerText = "800 RPM";
+          if (bh) {
+            bh.innerText = `Factor: ${factor.toFixed(2)} Warning`;
+            bh.className = "text-[10px] font-bold text-amber-500 uppercase";
+          }
+        } else {
+          card.classList.add("border-red-500", "mining-alert");
+          if (cardTitle) cardTitle.classList.add("text-red-500");
+          if (cardVal) {
+            cardVal.classList.add("text-red-500");
+            cardVal.innerText = `ALERT: MINING (${probPct}%)`;
+          }
+          document.getElementById("val-vessel").innerText = "Dredge Detected";
+          document.getElementById("val-rpm").innerText = "1840 RPM";
+          if (bh) {
+            bh.innerText = `Factor: ${factor.toFixed(2)} Danger`;
+            bh.className = "text-[10px] font-bold text-red-500 uppercase";
+          }
+        }
       }
 
       if (scourFill) scourFill.style.height = factor * 100 + "%";
@@ -97,8 +161,7 @@ function updateDashboard() {
       bridgeChart.data.datasets[0].data.push(factor);
       bridgeChart.update("none");
 
-      const pitch = parseFloat(data.Pitch) || 0;
-      const roll = parseFloat(data.Roll) || 0;
+
 
       const waveEnergy = parseFloat(data.WaveEnergy) || 0;
 
@@ -134,7 +197,7 @@ function updateDashboard() {
       }
     });
 }
-setInterval(updateDashboard, 2000); //2000 initially
+setInterval(updateDashboard, 500); //2000 initially
 setInterval(() => {
   document.getElementById("real-time-clock").innerText = new Date().toLocaleTimeString();
 }, 1000);
